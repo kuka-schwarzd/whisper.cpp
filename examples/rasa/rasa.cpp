@@ -713,13 +713,18 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                         // cut the prompt from the decoded text
                         const std::string command = ::trim(txt.substr(best_len));
 
-                        fprintf(stdout, "%s: Command '%s%s%s', (t = %d ms)\n", __func__, "\033[1m", command.c_str(), "\033[0m", (int) t_ms);
+                        // Check if the length of the command is smaller than two
+                        if (command.length() < 2) {
+                            fprintf(stdout, "%s: WARNING: Ignoring empty command '%s', try again\n", __func__, command.c_str());
+                        } else {
+                            fprintf(stdout, "%s: Command '%s%s%s', (t = %d ms)\n", __func__, "\033[1m", command.c_str(), "\033[0m", (int) t_ms);
 
-                        fprintf(stdout, "\n");
-                        fprintf(stdout, "ToRasa: %s\n", command.c_str());
-                        // Send the recognized text to Rasa
-                        sendToRasaRESTAPI(command);
-                        fprintf(stdout, "\n");
+                            fprintf(stdout, "\n");
+                            fprintf(stdout, "ToRasa: %s\n", command.c_str());
+                            // Send the recognized text to Rasa
+                            sendToRasaRESTAPI(command);
+                            fprintf(stdout, "\n");
+                        }
                     }
 
                 }
