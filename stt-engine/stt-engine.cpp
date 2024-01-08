@@ -6,10 +6,10 @@
 // ref: https://github.com/ggerganov/whisper.cpp/issues/171
 //
 
-#include "common-sdl.h"
-#include "common.h"
+#include "common/common-sdl.h"
+#include "common/common.h"
 #include "whisper.h"
-#include "grammar-parser.h"
+#include "grammar-parser/grammar-parser.h"
 
 #include <curl/curl.h>
 #include <sstream>

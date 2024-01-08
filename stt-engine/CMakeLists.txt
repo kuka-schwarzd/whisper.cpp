@@ -20,11 +20,11 @@ message(STATUS "SDL2_LIBRARIES = ${SDL2_LIBRARIES}")
 set(TARGET common)
 
 add_library(${TARGET} STATIC
-    common.h
-    common.cpp
-    common-ggml.h
-    common-ggml.cpp
-    grammar-parser.cpp
+    common/common.h
+    common/common.cpp
+    common/common-ggml.h
+    common/common-ggml.cpp
+    grammar-parser/grammar-parser.cpp
     )
 
 include(DefaultTargetOptions)
@@ -38,8 +38,8 @@ set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(TARGET common-sdl)
 
 add_library(${TARGET} STATIC
-    common-sdl.h
-    common-sdl.cpp
+    common/common-sdl.h
+    common/common-sdl.cpp
     )
 
 include(DefaultTargetOptions)
