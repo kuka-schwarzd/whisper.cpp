@@ -1,0 +1,38 @@
+// This material is the exclusive property of KUKA.
+// Except as expressly permitted by separate agreement, this material
+// may only be used by members of the development department of KUKA
+// for internal development purposes of KUKA.
+//
+// Copyright (C) KUKA. All Rights Reserved.
+
+syntax = "proto3";
+
+package kuka.conv_agent;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Kuka.ConvAgent";
+// protolint:disable:next MAX_LINE_LENGTH
+option go_package = "golang.rd.kuka.com/conv-agent/proto-api-go/kuka/conv-agent;conv-agent";
+option java_multiple_files = true;
+option java_outer_classname = "ConvAgentServiceProto";
+option java_package = "com.kuka.conv_agent";
+
+// The ConvAgent service definition.
+service ConvAgentService {
+  // Sends a message
+  rpc SendMessage (MessageRequest) returns (MessageResponse) {}
+  
+  // Sends a message - stream
+  rpc SubscribeMessages (MessageRequest) returns (stream MessageResponse) {}
+}
+
+// The request message
+message MessageRequest {
+  string message = 1;
+}
+
+// The response message
+message MessageResponse {
+  string message = 1;
+}
