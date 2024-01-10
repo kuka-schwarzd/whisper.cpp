@@ -88,14 +88,27 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# conv-agent
+set(TARGET conv-agent)
+
+add_library(${TARGET} STATIC
+    conv-agent/conv-agent-client.h
+    conv-agent/conv-agent-client.cpp
+    ${hw_proto_srcs}
+    ${hw_grpc_srcs}
+)
+
+include(DefaultTargetOptions)
+
+target_link_libraries(${TARGET} PRIVATE ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF}
+)
+
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 # Target
 set(TARGET stt-engine)
-add_executable(${TARGET} "${TARGET}.cpp"
-  ${hw_proto_srcs}
-  ${hw_grpc_srcs})
+add_executable(${TARGET} "${TARGET}.cpp")
 include(DefaultTargetOptions)
 target_link_libraries(${TARGET}
-  PRIVATE common common-sdl whisper -lcurl ${CMAKE_THREAD_LIBS_INIT}
-  ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF}
-  ${SDL2_LIBRARIES})
+  PRIVATE common common-sdl whisper conv-agent ${CMAKE_THREAD_LIBS_INIT} ${SDL2_LIBRARIES} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF}
+)

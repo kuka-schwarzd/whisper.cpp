@@ -17,4 +17,3 @@ class ConvAgentServiceClient {
 };
 
 void sendToGrpcServer(const std::string& text);
-

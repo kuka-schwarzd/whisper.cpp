@@ -23,73 +23,11 @@
 #include <vector>
 #include <map>
 
-#include <grpcpp/grpcpp.h>
-#include <grpc++/grpc++.h>
-#include "conv-agent/conv_agent_input_service.grpc.pb.h"
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
-using kuka::conv_agent::MessageResponse;
-using kuka::conv_agent::MessageRequest;
-using kuka::conv_agent::ConvAgentService;
+#include "conv-agent/conv-agent-client.h"
 
 bool file_exists(const std::string & fname) {
     std::ifstream f(fname.c_str());
     return f.good();
-}
-
-class ConvAgentServiceClient {
- public:
-  ConvAgentServiceClient(std::shared_ptr<Channel> channel)
-      : stub_(kuka::conv_agent::ConvAgentService::NewStub(channel)) {}
-
-  // Assembles client payload, sends it to the server, and returns its response
-  std::string sendRequest(const std::string& a) {
-    // Data to be sent to server
-    kuka::conv_agent::MessageRequest request;
-    request.set_message(a);
-
-    // Container for server response
-    kuka::conv_agent::MessageResponse reply;
-
-    // Context can be used to send metadata to the server or modify RPC behavior
-    ClientContext context;
-
-    // Actual Remote Procedure Call
-    Status status = stub_->SendMessage(&context, request, &reply);
-
-    // Returns results based on RPC status
-    if (status.ok()) {
-      return reply.message();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message() << std::endl;
-      return "RPC Failed";
-    }
-  }
-
- private:
-  std::unique_ptr<kuka::conv_agent::ConvAgentService::Stub> stub_;
-};
-
-// Function to send text to the gRPC server
-void sendToGrpcServer(const std::string& text) {
-  // Replace "0.0.0.0:50051" with your actual gRPC server address
-  std::string target_address("0.0.0.0:50051");
-
-  // Instantiates the client
-  ConvAgentServiceClient client(
-      // Channel from which RPCs are made - endpoint is the target_address
-      grpc::CreateChannel(target_address,
-                          // Indicate when channel is not authenticated
-                          grpc::InsecureChannelCredentials()));
-
-  // RPC is created and response is stored
-  std::string response = client.sendRequest(text);
-
-  // Prints results
-  std::cout << "Original string: " << text << std::endl;
-  std::cout << "Received string: " << response << std::endl;
 }
 
 // command-line parameters
@@ -605,54 +543,6 @@ int always_prompt_transcription(struct whisper_context * ctx, audio_async & audi
 
     return 0;
 }
-
-// Initialize libcurl globally
-static CURL* curl = curl_easy_init();
-
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
-    size_t totalSize = size * nmemb;
-    output->append(static_cast<char*>(contents), totalSize);
-    return totalSize;
-}
-
-void sendToRasaRESTAPI(const std::string& recognizedText) {
-    if (!curl) {
-        fprintf(stderr, "Failed to initialize libcurl\n");
-        return;
-    }
-
-    std::string url = "http://localhost:5005/webhooks/myio/pyttsx3";
-
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
-    struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    std::string postFields = "{\"message\":\"" + recognizedText + "\"}";
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
-
-    std::string responseData;  // To store the response
-
-    // Set the callback function to handle the response data
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
-
-    CURLcode res = curl_easy_perform(curl);
-
-    if (res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-    } else {
-        long responseCode;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-
-        printf("HTTP Response Code: %ld\n", responseCode);
-        printf("Rasa Response: %s\n", responseData.c_str());
-    }
-
-    curl_slist_free_all(headers);
-}
-
 
 // general-purpose mode
 // freely transcribe the voice into text
