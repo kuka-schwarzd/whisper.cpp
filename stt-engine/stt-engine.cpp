@@ -25,7 +25,7 @@
 
 #include <grpcpp/grpcpp.h>
 #include <grpc++/grpc++.h>
-#include "conv_agent_input_service.grpc.pb.h"
+#include "conv-agent/conv_agent_input_service.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
