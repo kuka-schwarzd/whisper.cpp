@@ -22,6 +22,7 @@
 #include <thread>
 #include <vector>
 #include <map>
+#include <chrono>
 
 #include "conv-agent/conv-agent-client.h"
 
@@ -571,6 +572,10 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
     fprintf(stderr, "\n");
     fprintf(stderr, "%s: general-purpose mode\n", __func__);
 
+    // Define the duration for asking prompt again (30 seconds)
+    const std::chrono::seconds ask_prompt_duration(30);
+    auto last_input_time = std::chrono::steady_clock::now();
+
     // main loop
     while (is_running) {
         // handle Ctrl + C
@@ -578,6 +583,14 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
 
         // delay
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - last_input_time);
+
+        if (elapsed_time >= ask_prompt_duration && have_prompt) {
+            ask_prompt = true;
+            have_prompt = false;  // Reset have_prompt when asking prompt again
+        }
 
         if (ask_prompt) {
             fprintf(stdout, "\n");
@@ -682,6 +695,10 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                     }
 
                 }
+
+                // Reset the timer for new input
+                last_input_time = std::chrono::steady_clock::now();
+                ask_prompt = false;
 
                 audio.clear();
             }
