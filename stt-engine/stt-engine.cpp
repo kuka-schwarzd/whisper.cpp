@@ -1,17 +1,9 @@
-// Voice assistant example
-//
-// Speak short text commands to the microphone.
-// This program will detect your voice command and convert them to text.
-//
-// ref: https://github.com/ggerganov/whisper.cpp/issues/171
-//
-
 #include "common/common-sdl.h"
 #include "common/common.h"
 #include "whisper.h"
 #include "grammar-parser/grammar-parser.h"
+#include "conv-agent/conv-agent-client.h"
 
-#include <curl/curl.h>
 #include <sstream>
 #include <cassert>
 #include <cstdio>
@@ -24,7 +16,6 @@
 #include <map>
 #include <chrono>
 
-#include "conv-agent/conv-agent-client.h"
 
 bool file_exists(const std::string & fname) {
     std::ifstream f(fname.c_str());
