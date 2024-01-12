@@ -1,0 +1,74 @@
+// This material is the exclusive property of KUKA.
+// Except as expressly permitted by separate agreement, this material
+// may only be used by members of the development department of KUKA
+// for internal development purposes of KUKA.
+//
+// Copyright (C) KUKA. All Rights Reserved.
+
+syntax = "proto3";
+
+package kuka.conv_agent;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Kuka.ConvAgent";
+// protolint:disable:next MAX_LINE_LENGTH
+option go_package = "golang.rd.kuka.com/conv-agent/proto-api-go/kuka/conv-agent;conv-agent";
+option java_multiple_files = true;
+option java_outer_classname = "ConvAgentServiceProto";
+option java_package = "com.kuka.conv_agent";
+
+// The ConvAgent service definition.
+service ConvAgentService {
+  // Sends a message
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  // Subscribes to messages
+  rpc SubscribeMessages(SubscribeMessagesRequest) returns (stream SubscribeMessagesResponse);
+}
+
+message SendMessageRequest {
+  Message message = 1;
+}
+
+message SendMessageResponse {}
+
+message SubscribeMessagesRequest {
+  Message message = 1;
+}
+
+message SubscribeMessagesResponse {
+  Message message = 1;
+}
+
+// Message
+message Message {
+  oneof type {
+    Input input = 1;
+    Output output = 2;
+    Wakeword wakeword = 3;
+  }
+}
+
+// Input
+message Input {
+  Content content = 1;
+  float probability = 2;
+}
+
+// Output
+message Output {
+  Content content = 1;
+}
+
+// Wakeword
+message Wakeword {
+  Content content = 1;
+  bool prompt = 2;
+  float probability = 3;
+}
+
+// Content
+message Content {
+  string text = 1;
+  string params = 2;
+}
