@@ -1,17 +1,9 @@
-// Voice assistant example
-//
-// Speak short text commands to the microphone.
-// This program will detect your voice command and convert them to text.
-//
-// ref: https://github.com/ggerganov/whisper.cpp/issues/171
-//
-
-#include "common-sdl.h"
-#include "common.h"
+#include "common/common-sdl.h"
+#include "common/common.h"
 #include "whisper.h"
-#include "grammar-parser.h"
+#include "grammar-parser/grammar-parser.h"
+#include "conv-agent/conv-agent-client.h"
 
-#include <curl/curl.h>
 #include <sstream>
 #include <cassert>
 #include <cstdio>
@@ -22,6 +14,8 @@
 #include <thread>
 #include <vector>
 #include <map>
+#include <chrono>
+
 
 bool file_exists(const std::string & fname) {
     std::ifstream f(fname.c_str());
@@ -542,54 +536,6 @@ int always_prompt_transcription(struct whisper_context * ctx, audio_async & audi
     return 0;
 }
 
-// Initialize libcurl globally
-static CURL* curl = curl_easy_init();
-
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
-    size_t totalSize = size * nmemb;
-    output->append(static_cast<char*>(contents), totalSize);
-    return totalSize;
-}
-
-void sendToRasaRESTAPI(const std::string& recognizedText) {
-    if (!curl) {
-        fprintf(stderr, "Failed to initialize libcurl\n");
-        return;
-    }
-
-    std::string url = "http://localhost:5005/webhooks/rest/webhook";
-
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
-    struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    std::string postFields = "{\"message\":\"" + recognizedText + "\"}";
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
-
-    std::string responseData;  // To store the response
-
-    // Set the callback function to handle the response data
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
-
-    CURLcode res = curl_easy_perform(curl);
-
-    if (res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-    } else {
-        long responseCode;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-
-        printf("HTTP Response Code: %ld\n", responseCode);
-        printf("Rasa Response: %s\n", responseData.c_str());
-    }
-
-    curl_slist_free_all(headers);
-}
-
-
 // general-purpose mode
 // freely transcribe the voice into text
 int process_general_transcription(struct whisper_context * ctx, audio_async & audio, const whisper_params & params) {
@@ -617,6 +563,10 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
     fprintf(stderr, "\n");
     fprintf(stderr, "%s: general-purpose mode\n", __func__);
 
+    // Define the duration for asking prompt again (30 seconds)
+    const std::chrono::seconds ask_prompt_duration(30);
+    auto last_input_time = std::chrono::steady_clock::now();
+
     // main loop
     while (is_running) {
         // handle Ctrl + C
@@ -624,6 +574,14 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
 
         // delay
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - last_input_time);
+
+        if (elapsed_time >= ask_prompt_duration && have_prompt) {
+            ask_prompt = true;
+            have_prompt = false;  // Reset have_prompt when asking prompt again
+        }
 
         if (ask_prompt) {
             fprintf(stdout, "\n");
@@ -656,6 +614,8 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                     if (txt.length() < 0.8*k_prompt.length() || txt.length() > 1.2*k_prompt.length() || sim < 0.8f) {
                         fprintf(stdout, "%s: WARNING: prompt not recognized, try again\n", __func__);
                         ask_prompt = true;
+                        // Send wakeword to Grpc
+                        sendToGrpcServerWakeword(k_prompt, p, false);
                     } else {
                         fprintf(stdout, "\n");
                         fprintf(stdout, "%s: The prompt has been recognized!\n", __func__);
@@ -665,6 +625,8 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                         // save the audio for the prompt
                         pcmf32_prompt = pcmf32_cur;
                         have_prompt = true;
+                        // Send wakeword to Grpc
+                        sendToGrpcServerWakeword(k_prompt, p, true);
                     }
                 } else {
                     // we have heard the activation phrase, now detect the commands
@@ -713,21 +675,24 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                         // cut the prompt from the decoded text
                         const std::string command = ::trim(txt.substr(best_len));
 
+                        // Filter command
                         // Check if the length of the command is smaller than two
                         if (command.length() < 2) {
                             fprintf(stdout, "%s: WARNING: Ignoring empty command '%s', try again\n", __func__, command.c_str());
                         } else {
                             fprintf(stdout, "%s: Command '%s%s%s', (t = %d ms)\n", __func__, "\033[1m", command.c_str(), "\033[0m", (int) t_ms);
 
-                            fprintf(stdout, "\n");
-                            fprintf(stdout, "ToRasa: %s\n", command.c_str());
-                            // Send the recognized text to Rasa
-                            sendToRasaRESTAPI(command);
-                            fprintf(stdout, "\n");
+                            // Send recognized text to Grpc
+                            sendToGrpcServerInput(command, p);
                         }
                     }
+                    fprintf(stdout, "\n");
 
                 }
+
+                // Reset the timer for new input
+                last_input_time = std::chrono::steady_clock::now();
+                ask_prompt = false;
 
                 audio.clear();
             }
