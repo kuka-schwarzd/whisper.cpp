@@ -614,6 +614,8 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                     if (txt.length() < 0.8*k_prompt.length() || txt.length() > 1.2*k_prompt.length() || sim < 0.8f) {
                         fprintf(stdout, "%s: WARNING: prompt not recognized, try again\n", __func__);
                         ask_prompt = true;
+                        // Send wakeword to Grpc
+                        sendToGrpcServerWakeword(k_prompt, p, false);
                     } else {
                         fprintf(stdout, "\n");
                         fprintf(stdout, "%s: The prompt has been recognized!\n", __func__);
@@ -623,6 +625,8 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                         // save the audio for the prompt
                         pcmf32_prompt = pcmf32_cur;
                         have_prompt = true;
+                        // Send wakeword to Grpc
+                        sendToGrpcServerWakeword(k_prompt, p, true);
                     }
                 } else {
                     // we have heard the activation phrase, now detect the commands
@@ -671,19 +675,18 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                         // cut the prompt from the decoded text
                         const std::string command = ::trim(txt.substr(best_len));
 
+                        // Filter command
                         // Check if the length of the command is smaller than two
                         if (command.length() < 2) {
                             fprintf(stdout, "%s: WARNING: Ignoring empty command '%s', try again\n", __func__, command.c_str());
                         } else {
                             fprintf(stdout, "%s: Command '%s%s%s', (t = %d ms)\n", __func__, "\033[1m", command.c_str(), "\033[0m", (int) t_ms);
 
-                            fprintf(stdout, "\n");
-                            fprintf(stdout, "ToRasa: %s\n", command.c_str());
-                            // Send the recognized text to Rasa
-                            sendToGrpcServer(command);
-                            fprintf(stdout, "\n");
+                            // Send recognized text to Grpc
+                            sendToGrpcServerInput(command, p);
                         }
                     }
+                    fprintf(stdout, "\n");
 
                 }
 
