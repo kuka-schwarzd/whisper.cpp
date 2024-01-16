@@ -46,7 +46,7 @@ target_link_libraries(${TARGET} PRIVATE ${SDL2_LIBRARIES})
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Proto directory
-set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/conv-agent/protos/conv-agent-api/kuka/conv_agent)
+set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/conv-agent/proto-api/conv-agent-api/proto/kuka/conv_agent)
 set(PROTO_OUT ${CMAKE_CURRENT_BINARY_DIR}/conv-agent)
 file(MAKE_DIRECTORY ${PROTO_OUT})
 
