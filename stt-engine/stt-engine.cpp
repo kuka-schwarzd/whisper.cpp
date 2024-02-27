@@ -45,7 +45,7 @@ struct whisper_params {
     bool no_timestamps = true;
     bool use_gpu       = true;
 
-    std::string language  = "en";
+    std::string language  = "de";
     std::string model     = "models/ggml-large-v2.bin";
     std::string fname_out;
     std::string commands;
@@ -683,7 +683,7 @@ int process_general_transcription(struct whisper_context * ctx, audio_async & au
                             fprintf(stdout, "%s: Command '%s%s%s', (t = %d ms)\n", __func__, "\033[1m", command.c_str(), "\033[0m", (int) t_ms);
 
                             // Send recognized text to Grpc
-                            sendToGrpcServerInput(command, p);
+                            sendToGrpcServerInput(command.c_str(), p);
                         }
                     }
                     fprintf(stdout, "\n");

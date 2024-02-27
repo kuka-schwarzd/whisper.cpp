@@ -4,7 +4,7 @@ This is a basic Speech To Text Engine that accepts voice commands from the micro
 
 ```bash
 # Run with default arguments and small model
-./build/bin/stt-engine -m ./models/ggml-large-v2.bin -t 8
+./build/bin/stt-engine -m ./models/ggml-large-v2.bin -t 8 -l de
 
 # On Raspberry Pi, use tiny or base models + "-ac 768" for better performance
 ./build/bin/stt-engine -m ./models/ggml-large-v2.bin -ac 768 -t 3 -c 0
