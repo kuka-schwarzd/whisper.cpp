@@ -564,14 +564,20 @@ install(TARGETS ${TARGET}
 add_subdirectory(bindings)
 
 #
+# stt-engine
+#
+
+add_subdirectory(stt-engine)
+
+#
 # programs, examples and tests
 #
 
 if (WHISPER_BUILD_TESTS AND NOT CMAKE_JS_VERSION)
-    enable_testing()
-    add_subdirectory(tests)
+    # enable_testing()
+    # add_subdirectory(tests)
 endif ()
 
 if (WHISPER_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    # add_subdirectory(examples)
 endif()

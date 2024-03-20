@@ -1,0 +1,10 @@
+*.o
+*.a
+.cache/
+.coreml/
+.test/
+.vs/
+.vscode/
+.DS_Store
+
+*/proto-api/
